@@ -63,9 +63,12 @@ For a background result (delegated task, cron, deferred job):
     bash ${HERMES_SKILL_DIR}/scripts/night-queue.sh is-quiet && \
       bash ${HERMES_SKILL_DIR}/scripts/night-queue.sh add "<2-4 sentences, links>"
 
-then answer exactly `NO_REPLY`. The morning briefing runs
-`night-queue.sh drain` and shows the items as "Overnight". Alerts you agreed on
-with the owner (money, security, health) follow their own rules.
+If `is-quiet` exits 0 and `add` succeeds, answer exactly `NO_REPLY`. If
+`is-quiet` exits 1, deliver the result normally. A queue failure is a blocker,
+not silence. The morning briefing runs
+`bash "${HERMES_SKILL_DIR}/scripts/night-queue.sh" drain` and shows the items as
+"Overnight". Alerts you agreed on with the owner (money, security, health) follow
+their own rules.
 
 ## Ordinary replies
 - A number, fact or outcome: one short sentence.
@@ -77,3 +80,16 @@ with the owner (money, security, health) follow their own rules.
 ## Setup
 `.env` of the profile: `TELEGRAM_BOT_TOKEN`, `OWNER_CHAT_ID`, optionally
 `OWNER_TZ`, `BRAIN_PATH`, `NIGHT_QUIET_START`, `NIGHT_QUIET_END`.
+`tg-react.sh` loads `${HERMES_HOME:-$HOME/.hermes}/.env`; `SECRETARY_ENV_FILE`
+overrides that path. `night-queue.sh` does not load `.env`. Export its variables
+before running it from a shell:
+
+```bash
+set -a
+. "${HERMES_HOME:-$HOME/.hermes}/.env"
+set +a
+```
+
+For a named profile, export `HERMES_HOME` to its directory first. Without
+`OWNER_TZ`, the queue uses UTC; without `BRAIN_PATH`, it uses `$HOME/brain`.
+The night queue needs `flock` and GNU `sed`, `find`, and `xargs` on `PATH`.

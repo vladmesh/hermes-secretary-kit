@@ -16,6 +16,9 @@ A daily cron job asks the owner how the day went, records the answer in the
 journal, and builds weekly and monthly summaries from those records.
 
 ## Setup
+Set `OWNER_TZ` and `BRAIN_PATH` in the profile `.env`. Outside Hermes, set
+`HERMES_SKILL_DIR` to this skill's directory before running the command.
+
 ```bash
 hermes cron create "30 22 * * *" "$(cat ${HERMES_SKILL_DIR}/templates/evening-review-prompt.md)" \
   --name "Evening review" --skill evening-review --skill brain --deliver telegram
