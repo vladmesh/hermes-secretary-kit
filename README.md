@@ -30,6 +30,7 @@ What you get:
 ## Install
 
 Requirements: Hermes Agent with the Telegram gateway configured, Python 3.10+, bash, `flock`.
+The night queue also uses GNU `sed`, `find`, and `xargs`; on macOS, put those GNU tools on `PATH`.
 
 ```bash
 git clone https://github.com/vladmesh/hermes-secretary-kit
@@ -37,11 +38,16 @@ cd hermes-secretary-kit
 HERMES_HOME=~/.hermes BRAIN_PATH=~/brain ./install.sh --with-cron
 ```
 
-`install.sh` copies the four skills to `$HERMES_HOME/skills/secretary-kit/`, puts the
-memory template into `$BRAIN_PATH` (skipped if a library is already there), and adds
-missing variables to `$HERMES_HOME/.env`. With `--with-cron` it also creates the
-evening review job. For a named profile set `HERMES_HOME=~/.hermes/profiles/<name>`
-and `HERMES_PROFILE=<name>`.
+`install.sh` copies the four skills to `$HERMES_HOME/skills/secretary-kit/`, replacing
+those skill directories on every run. It copies the memory template into
+`$BRAIN_PATH` only if `$BRAIN_PATH/INDEX.md` does not exist; other existing files
+do not prevent copying and may be overwritten. It adds `BRAIN_PATH`,
+`OWNER_CHAT_ID`, and `OWNER_TZ` to `$HERMES_HOME/.env` only if their assignments
+are missing. Existing values, even empty ones, are left unchanged.
+`HERMES_HOME` defaults to `~/.hermes`; `BRAIN_PATH` defaults to `~/brain`.
+With `--with-cron` it also creates the evening review job on every run, without
+checking for an existing job. `REVIEW_TIME` defaults to `30 22 * * *`. For a named
+profile set `HERMES_HOME=~/.hermes/profiles/<name>` and `HERMES_PROFILE=<name>`.
 
 Fill in `$HERMES_HOME/.env`:
 
@@ -52,8 +58,11 @@ OWNER_TZ=Europe/Lisbon    # also set `timezone:` in config.yaml to the same valu
 BRAIN_PATH=/home/you/brain
 ```
 
-Then restart the gateway (`hermes gateway restart`). Delete the sample notes in
-`$BRAIN_PATH`; they are fictional and exist to show the format.
+Then restart the gateway (`hermes gateway restart`; use `hermes -p <name> gateway restart`
+for a named profile). Delete the sample notes in `$BRAIN_PATH`; they are fictional
+and exist to show the format. Keep `facts/habits.md` and `journal/notes.md` with
+your own habits and plans; the evening review reads both. Re-run `reindex.py`
+after deleting or replacing notes.
 
 If you would rather keep the skills in this checkout, point Hermes at it instead of
 running the installer:
@@ -64,6 +73,9 @@ skills:
   external_dirs:
     - /path/to/hermes-secretary-kit/skills
 ```
+
+This only exposes the skills. For a new library, copy `brain-template/.` into
+`$BRAIN_PATH` and fill in the profile `.env` as above.
 
 ## How memory works
 
@@ -92,9 +104,11 @@ updated: 2026-01-12
 Small VPS `box-1` (Debian 12). Runs the agent and nightly backups.
 ```
 
-`reindex.py` reads the frontmatter and rewrites `INDEX.md` and each `_index.md`. It
-has no dependencies and is safe to run after every write. The agent searches the
-`description` line, so that line carries the facts people ask about.
+`reindex.py` reads the frontmatter of `.md` files directly in `facts/`, `people/`,
+`projects/`, and `journal/`, excluding `_index.md`. It rewrites `INDEX.md` and
+each section's `_index.md`. It has no dependencies and is safe to run after every
+write. The agent searches the `description` line, so that line carries the facts
+people ask about.
 
 `journal/notes.md` holds dated plans (`### For 2026-01-15`) that the evening review
 checks, and open topics that a morning briefing can surface one at a time.
@@ -127,11 +141,13 @@ skills/brain/          how to read, write and close notes
 skills/owner-channel/  reply, react or stay silent; scripts/tg-react.sh, scripts/night-queue.sh
 skills/deferred-tasks/ reminders and conditional promises on Hermes cron
 skills/evening-review/ daily check-in, journal entry, week and month summaries
-tests/                 unittest for reindex.py, tg_react.py, night-queue.sh
+tests/                 unittest for install.sh, reindex.py, tg_react.py, night-queue.sh
 install.sh
 ```
 
 ## Development
+
+Install `shellcheck` to run the lint command below.
 
 ```bash
 python3 -m unittest discover -s tests

@@ -29,7 +29,7 @@ Before telling the owner "X is still pending", check X against the live source
   `description`, `type`, `tags`, `updated` = today) and a short body. Link other
   notes as `[[slug]]`.
 - Refining a fact: edit the same file and bump `updated`. Before creating, check
-  `grep -l "name: <slug>"` and similar descriptions in INDEX.md.
+  `grep -rl "name: <slug>" "$BRAIN_PATH"` and similar descriptions in INDEX.md.
 - Outdated: rewrite or delete. Do not keep a history of contradictions.
 - After any write: `python3 $BRAIN_PATH/reindex.py`.
 
